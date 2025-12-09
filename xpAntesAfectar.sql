@@ -1,3 +1,12 @@
+SET DATEFIRST 7  
+SET ANSI_NULLS OFF  
+SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED  
+SET LOCK_TIMEOUT-1  
+SET QUOTED_IDENTIFIER OFF  
+GO 
+IF EXISTS (SELECT * FROM SYSOBJECTS WHERE ID=OBJECT_ID('dbo.xpAntesAfectar') AND TYPE = 'P')
+DROP PROC dbo.xpAntesAfectar
+GO
 CREATE PROCEDURE [dbo].[xpAntesAfectar]    
 @Modulo   char(5),                                                                                                        
 @ID              int,                                                                                                        
@@ -67,7 +76,8 @@ AS BEGIN
  @Departamento      varchar(50),    
  @UsuarioSucursal   int,    
  @CantidadExcede    float,
- @INFORCostoIndirecto    FLOAT
+ @INFORCostoIndirecto    FLOAT,
+ @Agente			varchar(10)
             ----          
     
          
@@ -385,15 +395,23 @@ BEGIN
 --------------------------------------------------------------Validación CXC Yisus -----------------                                                                                                  
     
 If @Accion IN ('Afectar'   ,'VERIFICAR')    
-begin                                                                               
+begin                                                                         
  If @Modulo='CXC'                                                      
- begin                                                                                           
-  select @CtaDinero=ISNULL(NULLIF(c.CtaDinero, ' '), 'NA'), @FormaCobro=ISNULL(NULLIF(c.FormaCobro, ' '), 'NA'),@Movimiento=c.Mov,              
-  @ESTATUS=c.Estatus  ,@situacion=ISNULL(SITUACION,'')               
-  from Cxc c                 
-    where id=@ID                
+ begin
+ 
+  select 
+  @CtaDinero=ISNULL(NULLIF(c.CtaDinero, ' '), 'NA'), 
+  @FormaCobro=ISNULL(NULLIF(c.FormaCobro, ' '), 'NA'),
+  @Movimiento=c.Mov,              
+  @ESTATUS=c.Estatus  ,
+  @situacion= COALESCE(SITUACION,''),-- ISNULL(SITUACION,''), 
+  @Origen = Origen,
+  @Cliente = Cliente,
+  @Clave	= MT.Clave
+  from Cxc c 
+  JOIN MovTipo mt on c.Mov=mt.Mov and mt.Modulo = @Modulo 
+  where id=@ID              
                        
-      
                 
 IF @Movimiento='cobro' AND @ESTATUS='SINAFECTAR'          
 BEGIN          
@@ -433,8 +451,27 @@ END
     Select @ok=10065, @OkRef='Forma Cobro'                                                                                 
    END                                                          
   END                                                                            
- end                                                                                                  
- end                                                                    
+ end     
+ 
+
+ IF @Clave IN ('CXC.ANC','CXC.C')
+ BEGIN
+
+ SELECT @OrigenId = Aplica,@Clave = AplicaID
+   FROM CxcD
+  WHERE ID = @ID
+
+	SELECT TOP 1 @Agente = COALESCE(Agente,'')
+	  FROM Cxc
+	 WHERE Mov = @OrigenId AND MovID = @Clave
+
+	 UPDATE Cxc SET Agente = @Agente WHERE ID = @ID
+ END
+
+
+ end 
+ 
+
 ---------------------------COMS--CC-(AO)--------------                           
 -- IF @Accion='Afectar'                                                                                            
 -- BEGIN                                                                                                       
