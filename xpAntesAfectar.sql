@@ -454,22 +454,24 @@ END
  end     
  
 
+ --JARC 05/12/2025 Actualiza el agente en los cobros si el agente del origen es diferente al agente del cobro
+
  IF @Clave IN ('CXC.ANC','CXC.C')
  BEGIN
 
- SELECT @OrigenId = Aplica,@Clave = AplicaID
-   FROM CxcD
-  WHERE ID = @ID
+SELECT TOP 1 @Agente = e1.Agente
+  FROM Cxc e
+ INNER JOIN CxcD d ON e.ID=d.ID AND COALESCE(d.Aplica,'') <> '' AND COALESCE(d.AplicaID,'') <> ''
+ INNER JOIN Cxc e1 ON e1.Mov=d.Aplica AND e1.MovID = d.AplicaID AND e1.Agente <> e.Agente
+ WHERE e.id=@ID
 
-	SELECT TOP 1 @Agente = COALESCE(Agente,'')
-	  FROM Cxc
-	 WHERE Mov = @OrigenId AND MovID = @Clave
-
+  IF COALESCE(@Agente,'') <> ''
+  BEGIN
 	 UPDATE Cxc SET Agente = @Agente WHERE ID = @ID
+  END
  END
 
-
- end 
+end 
  
 
 ---------------------------COMS--CC-(AO)--------------                           
