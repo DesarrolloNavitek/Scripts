@@ -1,5 +1,12 @@
-Text
----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+SET DATEFIRST 7  
+SET ANSI_NULLS OFF  
+SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED  
+SET LOCK_TIMEOUT-1  
+SET QUOTED_IDENTIFIER OFF  
+GO 
+IF EXISTS (SELECT * FROM SYSOBJECTS WHERE ID=OBJECT_ID('dbo.xpAntesAfectar') AND type = 'P')
+DROP PROCEDURE dbo.xpAntesAfectar
+GO
 CREATE PROCEDURE [dbo].[xpAntesAfectar]    
 @Modulo   char(5),                                                                                                        
 @ID              int,                                                                                                        
@@ -10,7 +17,7 @@ CREATE PROCEDURE [dbo].[xpAntesAfectar]
 @SincroFinal  bit,                                                                                                        
 @EnSilencio     bit,                                                                                                        
 @Ok              int    OUTPUT,                                                                                                        
-@OkRef           varchar(255)  OUTPUT,                                                                                                        
+@OkRef           varchar(255)  OUTPUT,
 @FechaRegistro datetime                                                                                                        
 AS BEGIN                                                                                                       
                                                                                                       
@@ -144,14 +151,33 @@ END
    BEGIN                                      
                                       
           IF @Modulo='VTAS'                            
-       BEGIN                                     
-       SELECT @ALM =ALMACEN,@MOV=Mov,@ESTATUS=ESTATUS FROM Venta WHERE ID=@ID                                      
+       BEGIN
+	   
+       SELECT @ALM =ALMACEN,@MOV=Mov,@ESTATUS=ESTATUS 
+	     FROM Venta 
+		WHERE ID=@ID
+
        SELECT @CERRADO = ISNULL(CERRARALM,0) FROM Alm WHERE Almacen=@ALM                                      
                                       
                                              
-             IF @CERRADO=1  AND @MOV='FACTURA' AND @ESTATUS='SINAFECTAR'                                      
+		IF @CERRADO=1  AND @MOV='FACTURA' AND @ESTATUS='SINAFECTAR'                                      
                                       
-       SELECT @Ok=666,@OkRef='EL ALMACEN ESTA CERRADO'                                      
+       SELECT @Ok=666,@OkRef='EL ALMACEN ESTA CERRADO'
+
+	   /*JARC 18/12/2025 sustituye al MURSPVALIDAPRECIOSNVK*/
+
+       IF  @MOV='FACTURA' AND @ESTATUS='SINAFECTAR' AND @Ok IS NULL
+		BEGIN	   
+			BEGIN                          
+               EXEC  dbo.xpValidaDescuentoLinea  @ID , @OK OUTPUT, @OKREF OUTPUT                          
+			END
+          
+				IF @Ok IS NULL
+		 
+				 BEGIN                              
+				  EXEC MURSPGENERAPLICACIONVTASNAVITEK  @ID         
+				 END 
+		END
        END                                      
                                       
           IF @Modulo='COMS'                          
@@ -182,31 +208,7 @@ END
                                                             
                                                             
                                                             
-                           
-                                                            
-                                                                              
-                                                                            
-  IF @Modulo='VTAS'                                        
-                                                                            
-   BEGIN                                                                            
-    SELECT @MOV=MOV ,@ESTATUS=ESTATUS FROM VENTA WHERE ID=@ID   -- SELECT DISTINCT MOV FROM VENTA                                    
-                               
-       IF  @MOV='FACTURA' AND @ESTATUS='SINAFECTAR'                         
-   BEGIN                          
                           
-   EXEC  MURSPVALIDAPRECIOSNVK  @ID , @OK OUTPUT, @OKREF OUTPUT                          
-                          
-   END                         
-                          
-            
-             
- IF @MOV ='FACTURA' AND  @ESTATUS='SINAFECTAR'                              
- BEGIN                              
-  EXEC MURSPGENERAPLICACIONVTASNAVITEK  @ID         
- END                              
-                              
-                              
-                                                                            
          IF @MOV IN (select Mov from MovTipo where Modulo='vtas' and SubClave='VTAS.PNVK') AND @ESTATUS='SINAFECTAR'                                                                                                                                          
 
 
@@ -239,7 +241,7 @@ END
       END                                                                            
                        
                                                                  
-   END                                                                            
+   -- JARC END                                                                            
     
                                                                             
                                                                                                       
@@ -969,7 +971,3 @@ END
 
   RETURN
 END
-
-
-
-Completion time: 2025-12-18T10:52:18.7775589-06:00
