@@ -1,12 +1,5 @@
-SET DATEFIRST 7  
-SET ANSI_NULLS OFF  
-SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED  
-SET LOCK_TIMEOUT-1  
-SET QUOTED_IDENTIFIER OFF  
-GO 
-IF EXISTS (SELECT * FROM SYSOBJECTS WHERE ID=OBJECT_ID('dbo.xpAntesAfectar') AND TYPE = 'P')
-DROP PROC dbo.xpAntesAfectar
-GO
+Text
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 CREATE PROCEDURE [dbo].[xpAntesAfectar]    
 @Modulo   char(5),                                                                                                        
 @ID              int,                                                                                                        
@@ -203,10 +196,10 @@ END
                           
    EXEC  MURSPVALIDAPRECIOSNVK  @ID , @OK OUTPUT, @OKREF OUTPUT                          
                           
-   END                          
+   END                         
                           
             
-                              
+             
  IF @MOV ='FACTURA' AND  @ESTATUS='SINAFECTAR'                              
  BEGIN                              
   EXEC MURSPGENERAPLICACIONVTASNAVITEK  @ID         
@@ -215,6 +208,10 @@ END
                               
                                                                             
          IF @MOV IN (select Mov from MovTipo where Modulo='vtas' and SubClave='VTAS.PNVK') AND @ESTATUS='SINAFECTAR'                                                                                                                                          
+
+
+
+
 
 
 
@@ -266,7 +263,7 @@ END
 END                                                            
           
                                                             
- END                                                            
+ END                                                    
                                                             
                                                             
       
@@ -315,8 +312,8 @@ END
      BEGIN                                                      
      SELECT @Ok=777,@OkRef='FALTA CAPTURAR COSTO EN EL ARTICULO: '+ @Articulo                  
   END                                      
-    END                                           
-   END                                 
+    END           
+   END      
   END                                            
                                           
 --Validacion Centro de costos Ventas y Gastos [JZ]                                                                   
@@ -325,6 +322,8 @@ BEGIN
 If @Modulo='GAS'                                                                   
 BEGIN                                                                                                      
 select @Estatus=Estatus, @Movimiento=V.Mov, @Clave=mt.Clave, @Empresa=v.Empresa, @Sucursal=v.Sucursal,  @CentroCosto=ISNULL(NULLIF(gd.ContUso, ' '), 'NA'),     @Origen=ISNULL(NULLIF(v.Origen, ' '), 'NA')                                                   
+
+
 
 
 
@@ -366,8 +365,10 @@ BEGIN
  --IF @Accion='Afectar'                                                                                           
  --BEGIN                                                           
 --If @Modulo='VTAS'                                                                             
---BEGIN                                                                                                      
+--BEGIN                                      
 --select @Estatus=Estatus, @Movimiento=V.Mov, @Clave=mt.Clave, @Empresa=v.Empresa, @Sucursal=v.Sucursal,  @CentroCosto=ISNULL(NULLIF(vd.ContUso, ' '), 'NA'),    @Origen=ISNULL(NULLIF(v.Origen, ' '), 'NA')                                                  
+
+
 
 
 
@@ -444,7 +445,7 @@ END
   BEGIN                                                 
    IF @CtaDinero='NA'                                                                                   
    begin                                                                                   
-    Select @ok=10065, @OkRef='Colocar Cuenta Dinero'                                                            
+    Select @ok=10065, @OkRef='Colocar Cuenta Dinero'      
    end                                                                       
    IF @FormaCobro='NA'                                                                                                  
    BEGIN                                                                                              
@@ -456,7 +457,7 @@ END
 
  --JARC 05/12/2025 Actualiza el agente en los cobros si el agente del origen es diferente al agente del cobro
 
- IF @Clave IN ('CXC.ANC','CXC.C')
+ IF @Clave IN ('CXC.ANC','CXC.C','CXC.NC')
  BEGIN
 
 SELECT TOP 1 @Agente = e1.Agente
@@ -480,6 +481,8 @@ end
 --If @Modulo='COMS'                   
 --BEGIN                                              
 --select @Estatus=Estatus, @Movimiento=C.Mov, @Clave=mt.Clave, @Empresa=C.Empresa, @Sucursal=C.Sucursal,  @CentroCosto=ISNULL(NULLIF(Cd.ContUso, ' '), 'NA'),     @Origen=ISNULL(NULLIF(C.Origen, ' '), 'NA')                                                 
+
+
 
 
 
@@ -510,8 +513,8 @@ end
  IF  @Modulo = 'COMS'                                                                            
    BEGIN                                                                                                      
     SELECT @MOV=Mov, @ESTATUS = Estatus FROM Compra                                                                                                      
-WHERE @ID = ID                                                                                                       
-                           
+WHERE @ID = ID                                                                         
+                    
    IF @Mov LIKE '%Orden%'  AND @ESTATUS = 'SINAFECTAR'                                                                                                      
       BEGIN                                                                   
                                                                                                     
@@ -555,7 +558,7 @@ WHERE @ID = ID
   BEGIN                                         
                                         
   SELECT @Prov = Proveedor  FROM Compra WHERE  ID=@ID                                  
-                                       
+  
   DECLARE @REGIMENFIS VARCHAR (30) , @lenrfc  int         
 
   SELECT @REGIMENFIS=ISNULL (FiscalRegimen,'666'),@lenrfc=len(isnull(rfc,'na')) FROM Prov WHERE Proveedor=@PROV                                        
@@ -652,6 +655,10 @@ País
 
 
 
+
+
+
+
  
  
  @Modulo AND ModuloID = @ID)              
@@ -718,7 +725,7 @@ País
     
       IF @Articulo IS NOT NULL    
         SELECT @OK = 10060, @OkRef = 'El Movimiento ' + @Referencia + ' tiene Orden Surtido Pendiente, debe cancelarla primero'    
-      ELSE    
+      ELSE 
       BEGIN    
         SELECT @CteArt = ISNULL(CteArt, 0)    
           FROM Usuario     
@@ -803,7 +810,7 @@ País
    left join INVD  on INV.ID=INVD.ID                  
   left join artdisponible ad on ad.Articulo=invd.Articulo                
   WHERE ad.Almacen=@ALM and  @id=invd.id              
-    */          
+    */ 
           
  SELECT InvD.Renglon, InvD.Articulo, ad.disponible           
     INTO #TempIF          
@@ -962,3 +969,7 @@ END
 
   RETURN
 END
+
+
+
+Completion time: 2025-12-18T10:52:18.7775589-06:00
