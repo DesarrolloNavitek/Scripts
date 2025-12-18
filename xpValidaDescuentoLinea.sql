@@ -35,7 +35,7 @@ SELECT	TOP 1
  WHERE v.ID = @Id
    AND v1.Estatus IN ('PENDIENTE','CONCLUIDO') 
    AND v1.Mov IN (SELECT Mov FROM MovTipo WHERE Modulo='VTAS' AND Clave ='VTAS.P'  AND SubClave ='VTAS.PNVK' AND Mov <>'COTIZACION')
-   AND COALESCE(vd.DescuentoLinea,0) <> COALESCE(vd1.DescuentoLinea,0)
+   AND ROUND(COALESCE(vd.DescuentoLinea,0),2) <> ROUND(COALESCE(vd1.DescuentoLinea,0),2)
 
 IF COALESCE(@Articulo,'') <> ''
 BEGIN    
@@ -44,4 +44,5 @@ SELECT @Ok=10065,@OkRef = 'En el Pedido: '+SPACE(2)+CONCAT(TRIM(@Pedido),' - ',T
     
 END    
   RETURN  
+
 END   
